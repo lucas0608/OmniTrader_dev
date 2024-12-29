@@ -1,0 +1,28 @@
+.panel-container {
+  position: relative;
+  z-index: 1;
+  will-change: transform;
+  touch-action: none;
+  transition: transform 0.3s ease-out;
+}
+
+.panel-container[data-reordering="true"] {
+  transition: transform 0.3s ease-out;
+  pointer-events: none;
+}
+
+.panel-header {
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.panel-header:active {
+  cursor: grabbing;
+}
+
+@media (max-width: 767px) {
+  .panel-container {
+    transform: translateY(var(--y, 0));
+  }
+}

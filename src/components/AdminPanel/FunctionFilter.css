@@ -1,0 +1,102 @@
+.custom-checkbox {
+  position: relative;
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.custom-checkbox input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.custom-checkbox .checkmark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 16px;
+  width: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.custom-checkbox .checkmark::before {
+  content: '[';
+  position: absolute;
+  left: -4px;
+  color: var(--primary-color);
+}
+
+.custom-checkbox .checkmark::after {
+  content: ']';
+  position: absolute;
+  right: -4px;
+  color: var(--primary-color);
+}
+
+.custom-checkbox input:checked ~ .checkmark {
+  background-color: transparent;
+}
+
+.custom-checkbox input:checked ~ .checkmark span {
+  display: block;
+  width: 8px;
+  height: 8px;
+  background-color: var(--primary-color);
+}
+
+.custom-checkbox input:not(:checked) ~ .checkmark span {
+  display: none;
+}
+
+/* Admin panel locked checkbox */
+.locked-checkbox {
+  position: relative;
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+}
+
+.locked-checkbox .checkmark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 16px;
+  width: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.locked-checkbox .checkmark::before {
+  content: '[';
+  position: absolute;
+  left: -4px;
+  color: var(--primary-color);
+}
+
+.locked-checkbox .checkmark::after {
+  content: ']';
+  position: absolute;
+  right: -4px;
+  color: var(--primary-color);
+}
+
+.locked-checkbox .checkmark span {
+  display: block;
+  width: 8px;
+  height: 8px;
+  background-color: var(--primary-color);
+}
+
+* {
+  -webkit-user-select: none; /* 針對 Safari 和 Chrome */
+  -moz-user-select: none;    /* 針對 Firefox */
+  -ms-user-select: none;     /* 針對 Internet Explorer */
+  user-select: none;         /* 標準屬性 */
+}

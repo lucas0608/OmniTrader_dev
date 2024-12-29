@@ -1,0 +1,10 @@
+{
+  "users": [
+    {
+      "username": "lucas",
+      "host": "lucas-admin.org",
+      "port": "7895",
+      "class": "Admin"
+    }
+  ]
+}

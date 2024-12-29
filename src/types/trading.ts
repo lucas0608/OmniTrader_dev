@@ -1,0 +1,1 @@
+export type TabType = 'CHART' | 'ORDER' | 'RECORDV2' | 'BALANCEV2' | 'CHAT';
