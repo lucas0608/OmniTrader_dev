@@ -1,132 +1,193 @@
-// Corrected: usePanelDrag.ts to Address All Remaining Issues
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { usePanelVisibility } from './usePanelVisibility';
+import { usePanelStore } from '../store/panelStore';
 import { useFilterStore } from '../store/filterStore';
-import { useAnimatedReorder } from './useAnimatedReorder';
-import { useDragDetection } from './useDragDetection';
+import { DragState, PanelPosition } from '../types/panel';
 
-interface DragState {
-  startX: number;
-  startY: number;
-  initialRect: DOMRect;
-}
+const PANEL_WIDTH = 448;
+const PANEL_GAP = 32;
+const SET_GAP = 64;
 
-interface Position {
-  x: number;
-  y: number;
-}
-
-export const usePanelDrag = (panelName: string) => {
+export const usePanelDrag = (panelName: string, setId?: number) => {
   const [isDragging, setIsDragging] = useState(false);
-  const [position, setPosition] = useState<Position>({ x: 0, y: 0 });
-  const dragStartRef = useRef<DragState | null>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
-  const dragLayerRef = useRef<HTMLDivElement | null>(null);
-
-  const { panelOrder, updatePanelOrder } = usePanelVisibility();
+  // Create unique drag state for each panel
+  const dragStateRef = useRef<DragState | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const { updatePanelOrder } = usePanelVisibility();
+  const { panelStates, setPanelPosition, isMobileView } = usePanelStore();
   const { reorderItems } = useFilterStore();
-  const { animateReorder } = useAnimatedReorder();
-  const { getDragPosition, shouldReorder } = useDragDetection();
 
-  const createDragLayer = useCallback((rect: DOMRect, content: HTMLElement) => {
-    const layer = document.createElement('div');
-    layer.style.position = 'fixed';
-    layer.style.zIndex = '9999';
-    layer.style.left = `${rect.left}px`;
-    layer.style.top = `${rect.top}px`;
-    layer.style.width = `${rect.width}px`;
-    layer.style.height = `${rect.height}px`;
-    layer.style.pointerEvents = 'none';
-    layer.style.opacity = '0.95';
-    layer.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
-    layer.appendChild(content.cloneNode(true));
-    document.body.appendChild(layer);
-    return layer;
-  }, []);
+  const startDrag = useCallback((clientX: number, clientY: number) => {
+    if (!panelRef.current) return;
+    
+    const currentSetId = setId || 0;
+    const panelKey = `${panelName}_${currentSetId}`;
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (!panelRef.current || !(e.target as HTMLElement).classList.contains('panel-header')) return;
+    const panels = Array.from(document.querySelectorAll('.panel-container'));
+    // Only get panels from the same set
+    const setPanels = panels.filter(panel => {
+      const name = panel.getAttribute('data-panel-name') || '';
+      const match = name.match(/_SET(\d+)$/);
+      return match ? parseInt(match[1]) === currentSetId : !currentSetId;
+    });
 
-    const rect = panelRef.current.getBoundingClientRect();
-    dragStartRef.current = {
-      startX: e.clientX,
-      startY: e.clientY,
-      initialRect: rect
+    const startIndex = setPanels.indexOf(panelRef.current);
+    const currentPosition = panelStates[panelName]?.position || { x: 0, y: 0 };
+
+    dragStateRef.current = {
+      key: panelKey,
+      startX: clientX,
+      startY: clientY,
+      startIndex,
+      initialPosition: currentPosition,
+      setId: currentSetId
     };
 
-    dragLayerRef.current = createDragLayer(rect, panelRef.current);
-
     setIsDragging(true);
-    panelRef.current.style.opacity = '0';
-    e.preventDefault();
-  }, [createDragLayer]);
+    panelRef.current.style.zIndex = '1000';
+    panelRef.current.style.opacity = '0.8';
+  }, [panelName, panelStates, setId]);
 
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!isDragging || !dragStartRef.current || !dragLayerRef.current) return;
+  const onDragMove = useCallback((e: MouseEvent | TouchEvent) => {
+    if (!isDragging || !dragStateRef.current || !panelRef.current) return;
+    
+    const { clientX, clientY } = 'touches' in e ? e.touches[0] : e;
+    const deltaX = clientX - dragStateRef.current.startX;
+    const deltaY = clientY - dragStateRef.current.startY;
+    const currentSetId = setId || 0;
 
-    const deltaX = e.clientX - dragStartRef.current.startX;
-    const deltaY = e.clientY - dragStartRef.current.startY;
+    if (isMobileView) {
+      panelRef.current.style.transform = `translateY(${deltaY}px)`;
+    } else {
+      // Only allow horizontal movement within set boundaries
+      const newX = dragStateRef.current.initialPosition.x + deltaX;
+      const newY = dragStateRef.current.initialPosition.y + deltaY;
+      
+      const minX = currentSetId * (PANEL_WIDTH + SET_GAP);
+      const maxX = minX + PANEL_WIDTH * 2 + PANEL_GAP;
+      const boundedX = Math.max(minX, Math.min(maxX, newX));
+      
+      panelRef.current.style.transform = `translate(${boundedX}px, ${newY}px)`;
+    }
+  }, [isDragging, isMobileView]);
 
-    setPosition({ x: deltaX, y: deltaY });
-    dragLayerRef.current.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+  const onDragEnd = useCallback(() => {
+    if (!isDragging || !dragStateRef.current || !panelRef.current) return;
 
-    const draggedPos = getDragPosition(dragLayerRef.current);
-    const currentIndex = panelOrder.indexOf(panelName);
+    const currentSetId = dragStateRef.current.setId;
 
-    document.querySelectorAll('.panel-container').forEach((panel) => {
-      if (panel === panelRef.current) return;
+    if (isMobileView) {
+      // Mobile: Handle vertical reordering
+      const panels = Array.from(document.querySelectorAll('.panel-container'));
+      
+      // Filter panels by set ID for mobile view
+      const setPanels = panels.filter(panel => {
+        const name = panel.getAttribute('data-panel-name') || '';
+        const match = name.match(/_SET(\d+)$/);
+        const panelSetId = match ? parseInt(match[1]) : 0;
+        return panelSetId === currentSetId;
+      });
 
-      const targetName = panel.getAttribute('data-panel-name');
-      if (!targetName) return;
+      const currentY = panelRef.current.getBoundingClientRect().top;
+      let targetIndex = dragStateRef.current.startIndex;
 
-      const targetIndex = panelOrder.indexOf(targetName);
-      if (targetIndex === -1) return;
+      setPanels.forEach((p, index) => {
+        const rect = p.getBoundingClientRect();
+        const midpoint = rect.top + rect.height / 2;
+        if (currentY < midpoint && index < targetIndex) targetIndex = index;
+        if (currentY > midpoint && index > targetIndex) targetIndex = index;
+      });
 
-      const totalPanels = panelOrder.length;
-      const targetPos = getDragPosition(panel as HTMLElement);
-
-      if (shouldReorder(draggedPos, targetPos, currentIndex, targetIndex, totalPanels)) {
-        reorderItems(currentIndex, targetIndex);
-        animateReorder(currentIndex, targetIndex); // Trigger animation once
-        updatePanelOrder([...panelOrder]); // Ensure real-time state update
+      if (targetIndex !== dragStateRef.current.startIndex) {
+        const newOrder = [...setPanels]
+          .map(p => p.getAttribute('data-panel-name'))
+          .filter((name): name is string => !!name);
+        
+        const [moved] = newOrder.splice(dragStateRef.current.startIndex, 1);
+        newOrder.splice(targetIndex, 0, moved);
+        updatePanelOrder(newOrder);
+        
+        // Sync with Function Filter
+        const { reorderItems } = useFilterStore.getState();
+        if (isMobileView) {
+          // Convert panel indices to filter indices
+          const filterStartIndex = dragStateRef.current.startIndex;
+          const filterTargetIndex = targetIndex;
+          reorderItems(filterStartIndex, filterTargetIndex);
+        }
       }
-    });
-  }, [isDragging, panelName, panelOrder, reorderItems, animateReorder, getDragPosition, shouldReorder, updatePanelOrder]);
 
-  const handleMouseUp = useCallback(() => {
-    if (!isDragging || !panelRef.current || !dragLayerRef.current) return;
+      // Reset panel styles
+      panelRef.current.style.transform = '';
+    } else {
+      // Desktop: Save new position
+      const transform = panelRef.current.style.transform;
+      const match = transform.match(/translate\((-?\d+(?:\.\d+)?)px,\s*(-?\d+(?:\.\d+)?)px\)/);
+      
+      if (match) {
+        const position: PanelPosition = {
+          x: parseFloat(match[1]),
+          y: parseFloat(match[2]),
+          setId: currentSetId
+        };
+        setPanelPosition(panelName, position);
+      }
+    }
 
     setIsDragging(false);
-    setPosition({ x: 0, y: 0 });
-    dragStartRef.current = null;
+    panelRef.current.style.zIndex = '';
+    panelRef.current.style.opacity = '';
+    // Reset drag state to initial values instead of null
+    dragStateRef.current = {
+      startX: 0,
+      startY: 0,
+      startIndex: 0,
+      setId: setId || 0,
+      initialPosition: { x: 0, y: 0 }
+    };
+  }, [isDragging, isMobileView, panelName, setPanelPosition, updatePanelOrder]);
 
-    dragLayerRef.current?.remove();
-    dragLayerRef.current = null;
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (!(e.target as HTMLElement).classList.contains('panel-header')) return;
+    e.preventDefault();
+    startDrag(e.clientX, e.clientY);
+  }, [panelName, panelStates]);
 
-    panelRef.current.style.opacity = '1';
-    updatePanelOrder([...panelOrder]); // Apply the final state
-  }, [isDragging, panelOrder, updatePanelOrder]);
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (!(e.target as HTMLElement).classList.contains('panel-header')) return;
+    const touch = e.touches[0];
+    startDrag(touch.clientX, touch.clientY);
+  }, [startDrag]);
 
   useEffect(() => {
     if (isDragging) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-    } else {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
+      window.addEventListener('mousemove', onDragMove);
+      window.addEventListener('mouseup', onDragEnd);
+      window.addEventListener('touchmove', onDragMove, { passive: false });
+      window.addEventListener('touchend', onDragEnd);
     }
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('mousemove', onDragMove);
+      window.removeEventListener('mouseup', onDragEnd);
+      window.removeEventListener('touchmove', onDragMove);
+      window.removeEventListener('touchend', onDragEnd);
     };
-  }, [isDragging, handleMouseMove, handleMouseUp]);
+  }, [isDragging, onDragMove, onDragEnd]);
+
+  // Apply saved position on mount (desktop only)
+  useEffect(() => {
+    if (!isMobileView && panelRef.current) {
+      const savedPosition = panelStates[panelName]?.position;
+      if (savedPosition) {
+        panelRef.current.style.transform = `translate(${savedPosition.x}px, ${savedPosition.y}px)`;
+      }
+    }
+  }, [panelName, panelStates, isMobileView]);
 
   return {
     isDragging,
-    position,
     panelRef,
     handleMouseDown,
-    handleMouseMove,
-    handleMouseUp
+    handleTouchStart
   };
 };

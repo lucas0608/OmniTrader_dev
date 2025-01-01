@@ -78,7 +78,7 @@ export const ChatV2Tab: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col space-y-4 h-full">
       <div className="flex justify-between items-center gap-4">
         <UserSelector
           mode={mode}
@@ -91,8 +91,8 @@ export const ChatV2Tab: React.FC = () => {
           
           {showSettingsButton && (
             <button
-              onClick={() => setShowSettings(true)}
-              className="p-2 hover:bg-gray-700 rounded"
+              onClick={() => setShowSettings(true)} 
+              className="p-2 hover:bg-gray-700 rounded transition-colors duration-200"
               title="Chat Settings"
             >
               <svg className="w-5 h-5 text-theme" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -104,7 +104,7 @@ export const ChatV2Tab: React.FC = () => {
         </div>
       </div>
       
-      <div className="h-64 bg-gray-800 rounded-lg overflow-y-auto">
+      <div className="flex-1 min-h-[16rem] bg-gray-800 rounded-lg overflow-hidden">
         <ChatMessages
           messages={messages[mode === 'announcement' ? 'announcements' : mode === 'ai' ? 'ai' : selectedUser] || []}
           settings={settings}
@@ -115,6 +115,7 @@ export const ChatV2Tab: React.FC = () => {
       </div>
       
       <ChatInput 
+        className="mt-auto"
         onSend={handleSend}
         mode={mode}
         selectedUser={selectedUser}

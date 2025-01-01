@@ -39,21 +39,7 @@ export const useChatStore = create<ChatState>()(
       
       setMode: (mode: ChatMode) => set({ mode }),
 
-      updateSettings: (newSettings) =>
-        set((state) => ({
-          settings: { ...state.settings, ...newSettings }
-        })),
-
-      addMessage: (userId, message) =>
-        set((state) => ({
-          messages: {
-            ...state.messages,
-            [userId]: [
-              ...(state.messages[userId] || []),
-              { ...message, id: Date.now() }
-            ]
-          }
-        })),
+      setMessages: (messages) => set({ messages }),
 
       createGroup: (group) =>
         set((state) => {
@@ -71,7 +57,8 @@ export const useChatStore = create<ChatState>()(
           };
         }),
 
-      joinGroup: (groupId, username) =>
+
+     joinGroup: (groupId, username) =>
         set((state) => {
           const group = state.settings.groupChat.groups.find(g => g.id === groupId);
           if (!group) throw new Error('Group not found');
@@ -101,6 +88,7 @@ export const useChatStore = create<ChatState>()(
             }
           };
         }),
+
 
       leaveGroup: (groupId) =>
         set((state) => {
@@ -142,6 +130,19 @@ export const useChatStore = create<ChatState>()(
           };
         }),
 
+
+      addGroupMember: (groupId: string, username: string) => set((state) => ({
+        settings: {
+          ...state.settings,
+          groupChat: {
+            ...state.settings.groupChat,
+            groups: state.settings.groupChat.groups?.map(g =>
+              g.id === groupId ? { ...g, members: [...g.members, username] } : g
+            ) || []
+          }
+        }
+      })),
+
       removeGroupMember: (groupId, username) =>
         set((state) => {
           const group = state.settings.groupChat.groups.find(g => g.id === groupId);
@@ -170,18 +171,20 @@ export const useChatStore = create<ChatState>()(
           };
         }),
 
-      addGroupMember: (groupId, username) =>
+
+      updateSettings: (newSettings) =>
         set((state) => ({
-          settings: {
-            ...state.settings,
-            groupChat: {
-              ...state.settings.groupChat,
-              groups: state.settings.groupChat.groups.map(g =>
-                g.id === groupId
-                  ? { ...g, members: [...g.members, username] }
-                  : g
-              )
-            }
+          settings: { ...state.settings, ...newSettings }
+        })),
+        
+      addMessage: (userId, message) =>
+        set((state) => ({
+          messages: {
+            ...state.messages,
+            [userId]: [
+              ...(state.messages[userId] || []),
+              { ...message, id: Date.now() }
+            ]
           }
         }))
     }),

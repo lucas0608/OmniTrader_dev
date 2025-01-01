@@ -10,6 +10,8 @@ import { useAccountManagerStore } from './store/accountManagerStore';
 import { useAlgoManagerStore } from './store/algoManagerStore';
 import { useLogoManagement } from './hooks/useLogoManagement';
 import { useThemeInitialization } from './hooks/useThemeInitialization';
+import { useViewSwitching } from './hooks/useViewSwitching';
+import { LogoMenu } from './components/LogoMenu/LogoMenu';
 
 const App = () => {
   const { visiblePanels, panelOrder } = usePanelVisibility();
@@ -17,7 +19,8 @@ const App = () => {
   const { loadAccounts } = useAccountManagerStore();
   const { loadAlgos } = useAlgoManagerStore();
   useLogoManagement();
-  useThemeInitialization(); // Add theme initialization
+  useThemeInitialization();
+  useViewSwitching();
 
   useEffect(() => {
     loadUsers();
@@ -28,37 +31,46 @@ const App = () => {
   const renderPanel = (panelName: string, index: number) => {
     if (!visiblePanels[panelName]) return null;
 
-    switch (panelName) {
-      case 'ADMIN PANEL':
-        return <AdminPanel key={`panel-${index}`} />;
-      case 'TRADING PANEL':
-        return <TradingPanel key={`panel-${index}`} />;
-      case 'ACCOUNT MANAGER':
-        return <AccountManager key={`panel-${index}`} />;
-      case 'ALGO MANAGER':
-        return <AlgoManager key={`panel-${index}`} />;
-      case 'COMPACT TRADING PANEL':
-        return <CompactTradingPanel key={`panel-${index}`} />;
-      default:
-        return null;
-    }
+    // Extract base panel name and set ID
+    const [baseName, setId] = panelName.split('_SET');
+
+    const panel = (() => {
+      switch (baseName) {
+        case 'ADMIN PANEL':
+          return <AdminPanel />;
+        case 'TRADING PANEL':
+          return <TradingPanel />;
+        case 'ACCOUNT MANAGER':
+          return <AccountManager />;
+        case 'ALGO MANAGER':
+          return <AlgoManager />;
+        case 'COMPACT TRADING PANEL':
+          return <CompactTradingPanel />;
+        default:
+          return null;
+      }
+    })();
+
+    return (
+      <React.Fragment key={panelName}>
+        {panel}
+      </React.Fragment>
+    );
   };
 
   return (
     <div className="min-h-screen bg-black p-1 md:p-2 overflow-y-auto">
-      <div className="w-full max-w-md mx-auto">
-        <header className="flex items-center gap-2 mb-1">
-          <img 
-            src="/logo.svg" 
-            alt="OMNI TRADER" 
-            className="h-5 md:h-8"
-          />
-          <h1 className="font-bold text-theme">
-            <span className="text-lg md:text-2xl">OMNI TRADER</span>
-            <span className="text-xs md:text-sm"> v3.2</span>
-          </h1>
-        </header>
-        {panelOrder.map((panel, index) => renderPanel(panel, index))}
+      <div className="w-full flex flex-col items-center md:items-start md:pl-2">
+        <div className="w-full max-w-md">
+          <header className="flex items-center gap-2 mb-1">
+            <LogoMenu />
+            <h1 className="font-bold text-theme">
+              <span className="text-lg md:text-2xl">OMNI TRADER</span>
+              <span className="text-xs md:text-sm"> v3.2</span>
+            </h1>
+          </header>
+          {panelOrder.map((panel, index) => renderPanel(panel, index))}
+        </div>
       </div>
     </div>
   );

@@ -12,9 +12,9 @@ export const ChatModeSelector: React.FC<ChatModeSelectorProps> = ({
 }) => {
   // Show announcement mode for all users
   const modes = [
-    { value: 'normal', label: 'Normal Chat' },
-    { value: 'group', label: 'Group Chat' },
-    { value: 'ai', label: 'AI Model' },
+    { value: 'normal', label: 'Chat' },
+    { value: 'group', label: 'Groups' },
+    { value: 'ai', label: 'AI Assistance' },
     { value: 'announcement', label: 'Announcement' }
   ] as { value: ChatMode; label: string }[];
 

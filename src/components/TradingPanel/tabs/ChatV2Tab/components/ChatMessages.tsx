@@ -25,19 +25,19 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
   return (
     <div 
       ref={scrollRef}
-      className="flex-1 h-full bg-[#1F2937] overflow-y-auto custom-scrollbar"
+      className="flex-1 h-full bg-[#1F2937] overflow-y-auto custom-scrollbar relative"
     >
-      <div className="p-4 space-y-2">
+      <div className="p-4 space-y-2 min-h-full">
         {messages.map((msg) => (
           <div 
             key={`${msg.id}-${msg.timestamp.toString()}`}
-            className={`text-sm ${msg.type === 'system' ? 'text-gray-400 italic' : ''}`}
+            className={`text-sm break-words ${msg.type === 'system' ? 'text-gray-400 italic' : ''}`}
             style={{ color: msg.type === 'system' ? undefined : getMessageColor(msg.sender) }}
           >
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-gray-500 mr-1">
               {new Date(msg.timestamp).toLocaleTimeString()} - 
             </span>
-            <span className="font-bold">{getDisplayName(msg.sender)}: </span>
+            <span className="font-bold mr-1">{getDisplayName(msg.sender)}: </span>
             {msg.text}
           </div>
         ))}

@@ -1,16 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { ChatSettings } from '../../../../../types/chat';
+import { useClickOutside } from '../../../../../hooks/useClickOutside';
 
 interface AIChatSettingsProps {
   settings: ChatSettings;
   onSettingsChange: (newSettings: ChatSettings) => void;
+  onClose?: () => void;
 }
 
 export const AIChatSettings: React.FC<AIChatSettingsProps> = ({
   settings,
+  onClose,
   onSettingsChange
 }) => {
   const [showApiKey, setShowApiKey] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useClickOutside(modalRef, onClose || (() => {}));
 
   const handleChange = (field: keyof ChatSettings['aiChat'], value: string) => {
     onSettingsChange({
@@ -20,7 +26,7 @@ export const AIChatSettings: React.FC<AIChatSettingsProps> = ({
   };
 
   return (
-    <div className="space-y-4">
+    <div ref={modalRef} className="space-y-4">
       <div>
         <label className="block text-white text-sm mb-1">My Message Color</label>
         <input

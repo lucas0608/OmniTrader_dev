@@ -10,6 +10,8 @@ interface ValidationState {
   canRevalidate: boolean;
 }
 
+const BINANCE_API_URL = 'https://testnet.binance.vision/api/v3';
+
 const createSignature = (queryString: string, secretKey: string, keyType: 'hmac' | 'ed25519'): string => {
   return keyType === 'hmac' 
     ? CryptoJS.HmacSHA256(queryString, secretKey).toString()
@@ -41,7 +43,7 @@ export const useApiKeyValidation = (
       const queryString = `timestamp=${timestamp}`;
       const signature = createSignature(queryString, secretKey, keyType);
 
-      const response = await axios.get('https://api.binance.com/api/v3/account', {
+      const response = await axios.get(`${BINANCE_API_URL}/account`, {
         params: { timestamp, signature },
         headers: { 'X-MBX-APIKEY': apiKey }
       });

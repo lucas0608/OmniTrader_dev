@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { ChatSettings as ChatSettingsType } from '../../../../../types/chat';
 import { useUserStore } from '../../../../../store/userStore';
 import { useChatColors } from '../../../../../hooks/useChatColors';
+import { useClickOutside } from '../../../../../hooks/useClickOutside';
 
 interface AnnouncementSettingsProps {
   settings: ChatSettingsType;
-  onClose: () => void;
+  onClose?: () => void;
   onSave: (settings: ChatSettingsType) => void;
 }
 
@@ -17,6 +18,9 @@ export const AnnouncementSettings: React.FC<AnnouncementSettingsProps> = ({
   const [localSettings, setLocalSettings] = useState(settings);
   const { currentUser } = useUserStore();
   const { resetColors } = useChatColors();
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useClickOutside(modalRef, onClose || (() => {}));
   const isAdmin = currentUser?.class === 'Admin';
 
   const handleReset = () => {
@@ -33,7 +37,7 @@ export const AnnouncementSettings: React.FC<AnnouncementSettingsProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-[#1a1a1a] border border-theme p-4 w-full max-w-md rounded">
+      <div ref={modalRef} className="bg-[#1a1a1a] border border-theme p-4 w-full max-w-md rounded">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-theme">Announcement Settings</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-white">×</button>

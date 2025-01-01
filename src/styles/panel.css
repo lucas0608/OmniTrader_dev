@@ -1,0 +1,21 @@
+.panel-container {
+  position: relative;
+  z-index: 1;
+  touch-action: none;
+}
+
+.panel-container.dragging {
+  z-index: 1000;
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+.panel-header {
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.panel-header:active {
+  cursor: grabbing;
+}

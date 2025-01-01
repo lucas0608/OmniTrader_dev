@@ -1,13 +1,20 @@
 .panel-container {
   position: relative;
   z-index: 1;
+  transition: transform 0.2s ease-out;
   will-change: transform;
   touch-action: none;
-  transition: transform 0.3s ease-out;
 }
 
-.panel-container[data-reordering="true"] {
-  transition: transform 0.3s ease-out;
+.panel-container.dragging {
+  z-index: 1000;
+  transition: none;
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.panel-container.reordering {
+  z-index: 2;
   pointer-events: none;
 }
 
@@ -21,8 +28,15 @@
   cursor: grabbing;
 }
 
-@media (max-width: 767px) {
-  .panel-container {
-    transform: translateY(var(--y, 0));
+@keyframes snapAnimation {
+  from {
+    transform: translateY(var(--from-y));
   }
+  to {
+    transform: translateY(var(--to-y));
+  }
+}
+
+.panel-snap {
+  animation: snapAnimation 0.2s ease-out forwards;
 }

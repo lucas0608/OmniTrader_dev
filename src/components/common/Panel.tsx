@@ -1,10 +1,12 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { PanelHeader } from './PanelHeader';
 import { useCollapsible } from '../../hooks/useCollapsible';
 import { usePanelDrag } from '../../hooks/usePanelDrag';
+import { usePanelStore } from '../../store/panelStore';
 
 interface PanelProps {
   title: string;
+  setId?: number;
   showSettings?: boolean;
   onSettingsClick?: () => void;
   isSettingsActive?: boolean;
@@ -14,41 +16,47 @@ interface PanelProps {
 
 export const Panel: React.FC<PanelProps> = ({
   title,
+  setId,
   showSettings,
   onSettingsClick,
   isSettingsActive,
   children,
   disableCollapse
 }) => {
+  const panelName = setId !== undefined ? `${title}_SET${setId}` : title;
   const { isCollapsed, toggle } = useCollapsible(title);
+  const { isMobileView, panelStates, setActivePanel } = usePanelStore();
   const {
     isDragging,
-    position,
     panelRef,
     handleMouseDown,
-    handleMouseMove,
-    handleMouseUp
-  } = usePanelDrag(title);
+    handleTouchStart
+  } = usePanelDrag(title, setId);
 
-  useEffect(() => {
-    if (isDragging) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
+  const panelState = panelStates[panelName];
+  const style = !isMobileView && panelState ? {
+    transform: `translate(${panelState.position.x}px, ${panelState.position.y}px)`,
+    zIndex: panelState.zIndex || 1,
+    width: '448px' // Fixed width in desktop mode
+  } : undefined;
+
+  const handlePanelClick = () => {
+    if (!isMobileView) {
+      setActivePanel(title);
     }
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDragging, handleMouseMove, handleMouseUp]);
+  };
 
   return (
     <div
       ref={panelRef}
-      className={`panel-container mb-4 ${isDragging ? 'dragging' : ''}`}
+      className={`
+        panel-container mb-4 
+        ${isDragging ? 'dragging' : ''} 
+        ${!isMobileView ? 'fixed' : 'w-full max-w-md mx-auto'}
+      `}
+      style={style}
       data-panel-name={title}
-      style={{
-        transform: isDragging ? `translate(${position.x}px, ${position.y}px)` : undefined
-      }}
+      onClick={handlePanelClick}
     >
       <PanelHeader 
         title={title}
@@ -59,6 +67,7 @@ export const Panel: React.FC<PanelProps> = ({
         isSettingsActive={isSettingsActive}
         disableCollapse={disableCollapse}
         onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
       />
       {!isCollapsed && (
         <div className="bg-[#1a1a1a] border border-theme p-4">

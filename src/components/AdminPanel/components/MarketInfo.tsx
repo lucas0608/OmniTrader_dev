@@ -7,35 +7,50 @@ import { ConnectionStatus } from './ConnectionStatus';
 import { useWebSocket } from '../../../hooks/useWebSocket';
 import { formatPrice, formatCompactNumber } from '../../../utils/formatters';
 
-export const MarketInfo: React.FC = () => {
+interface MarketInfoProps {
+  setId?: number;
+}
+
+export const MarketInfo: React.FC<MarketInfoProps> = ({ setId }) => {
   const [showSelector, setShowSelector] = useState(false);
   const [showMarketData, setShowMarketData] = useState(false);
-  const { currentSymbol, marketData, fetchMarketData, setCurrentSymbol } = useMarketStore();
+  const { 
+    currentSymbol, 
+    symbolsBySet, 
+    marketData, 
+    marketDataBySet, 
+    fetchMarketData, 
+    setCurrentSymbol 
+  } = useMarketStore();
   const { settings } = useUserStore();
-  const { status } = useWebSocket(currentSymbol);
+  const symbol = setId !== undefined && symbolsBySet[setId] 
+    ? symbolsBySet[setId] 
+    : currentSymbol;
+  const { status } = useWebSocket(symbol);
+  const displayData = setId !== undefined 
+    ? marketDataBySet[setId] 
+    : marketData;
 
-  const displaySymbol = currentSymbol.replace(/^([A-Za-z]+)(USDT)$/, '$1/$2');
+  const displaySymbol = symbol.replace(/^([A-Za-z]+)(USDT)$/, '$1/$2');
 
   useEffect(() => {
-    fetchMarketData(currentSymbol);
+    fetchMarketData(symbol, setId);
     if (settings.dataMethod === 'polling') {
-      const interval = setInterval(() => {
-        fetchMarketData(currentSymbol);
-      }, 1000);
+      const interval = setInterval(() => fetchMarketData(symbol, setId), 1000);
       return () => clearInterval(interval);
     }
-  }, [currentSymbol, settings.dataMethod, settings.priceSource]);
+  }, [symbol, setId, settings.dataMethod, settings.priceSource, fetchMarketData]);
 
-  const lastUpdateTime = marketData?.timestamp 
-    ? new Date(marketData.timestamp).toLocaleString()
+  const lastUpdateTime = displayData?.timestamp 
+    ? new Date(displayData.timestamp).toLocaleString()
     : 'N/A';
 
-  const priceChangeColor = marketData?.change24h > 0 ? 'text-green-500' : 
-                          marketData?.change24h < 0 ? 'text-red-500' : 
+  const priceChangeColor = displayData?.change24h > 0 ? 'text-green-500' : 
+                          displayData?.change24h < 0 ? 'text-red-500' : 
                           'text-white';
 
   const handleRefresh = () => {
-    fetchMarketData(currentSymbol);
+    fetchMarketData(symbol, setId);
   };
 
   return (
@@ -47,11 +62,11 @@ export const MarketInfo: React.FC = () => {
         <div className="font-mono">
           <span className={`text-xs sm:text-sm ${priceChangeColor}`}>{displaySymbol}</span>
           <div className={`text-lg sm:text-2xl mt-1 ${priceChangeColor}`}>
-            ${marketData?.price ? formatPrice(marketData.price) : '0.00'}
+            ${displayData?.price ? formatPrice(displayData.price) : '0.00'}
           </div>
-          {marketData && (
+          {displayData && (
             <div className={`text-xs sm:text-sm mt-1 ${priceChangeColor}`}>
-              {marketData.change24h >= 0 ? '+' : ''}{marketData.change24h.toFixed(2)}%
+              {displayData.change24h >= 0 ? '+' : ''}{displayData.change24h.toFixed(2)}%
             </div>
           )}
         </div>
@@ -83,32 +98,31 @@ export const MarketInfo: React.FC = () => {
         </button>
       </div>
       
-      {/* Rest of the component remains the same */}
       <div 
         className="bg-[#1a1a1a] border border-theme p-3 h-[140px] cursor-pointer"
         onClick={() => setShowMarketData(true)}
       >
         <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-white font-mono text-sm h-full">
-          <div>H ${marketData?.high ? formatPrice(marketData.high) : '0.00'}</div>
-          <div>L ${marketData?.low ? formatPrice(marketData.low) : '0.00'}</div>
-          <div>Vol ${marketData?.volume24h ? formatCompactNumber(marketData.volume24h / 1e9) : '0.00'}B</div>
-          <div>MCap ${marketData?.marketCap ? formatCompactNumber(marketData.marketCap / 1e9) : '0.00'}B</div>
+          <div>H ${displayData?.high ? formatPrice(displayData.high) : '0.00'}</div>
+          <div>L ${displayData?.low ? formatPrice(displayData.low) : '0.00'}</div>
+          <div>Vol ${displayData?.volume24h ? formatCompactNumber(displayData.volume24h / 1e9) : '0.00'}B</div>
+          <div>MCap ${displayData?.marketCap ? formatCompactNumber(displayData.marketCap / 1e9) : '0.00'}B</div>
         </div>
       </div>
 
       {showSelector && (
         <CryptoSelector 
           onSelect={(symbol) => {
-            setCurrentSymbol(`${symbol}USDT`);
+            setCurrentSymbol(`${symbol}USDT`, setId);
             setShowSelector(false);
           }}
           onClose={() => setShowSelector(false)}
         />
       )}
 
-      {showMarketData && marketData && (
+      {showMarketData && displayData && (
         <MarketDataModal
-          symbol={currentSymbol}
+          symbol={symbol}
           onClose={() => setShowMarketData(false)}
         />
       )}

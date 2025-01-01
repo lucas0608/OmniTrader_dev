@@ -93,10 +93,3 @@
   height: 8px;
   background-color: var(--primary-color);
 }
-
-* {
-  -webkit-user-select: none; /* 針對 Safari 和 Chrome */
-  -moz-user-select: none;    /* 針對 Firefox */
-  -ms-user-select: none;     /* 針對 Internet Explorer */
-  user-select: none;         /* 標準屬性 */
-}

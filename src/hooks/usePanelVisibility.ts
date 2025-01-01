@@ -1,9 +1,11 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { useFilterStore } from '../store/filterStore';
 
 interface PanelVisibilityState {
   visiblePanels: { [key: string]: boolean };
   panelOrder: string[];
+  updateVisiblePanels: (panels: { [key: string]: boolean }) => void;
   togglePanel: (panel: string) => void;
   updatePanelOrder: (newOrder: string[]) => void;
 }
@@ -33,7 +35,29 @@ export const usePanelVisibility = create<PanelVisibilityState>()(
           },
         })),
       updatePanelOrder: (newOrder) =>
-        set({ panelOrder: Array.from(new Set(newOrder)) }),
+        set((state) => {
+          const { visiblePanels } = state;
+          const { syncWithPanelOrder } = useFilterStore.getState();
+          
+          // Create visibility state for new panels
+          const newVisiblePanels = { ...visiblePanels };
+          newOrder.forEach(panel => {
+            if (!(panel in newVisiblePanels)) {
+              // Only show Admin Panel for new sets
+              newVisiblePanels[panel] = panel.includes('ADMIN PANEL') && panel.includes('_SET');
+            }
+          });
+          
+          // Sync with Function Filter in mobile view
+          if (window.innerWidth < 768) {
+            syncWithPanelOrder(newOrder);
+          }
+          
+          return {
+            panelOrder: Array.from(new Set(newOrder)),
+            visiblePanels: newVisiblePanels
+          };
+        }),
     }),
     {
       name: 'panel-visibility-storage',

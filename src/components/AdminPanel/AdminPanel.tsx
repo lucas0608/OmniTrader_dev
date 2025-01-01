@@ -12,7 +12,11 @@ import { usePanelVisibility } from '../../hooks/usePanelVisibility';
 import { useFilterStore } from '../../store/filterStore';
 import { useUserStore } from '../../store/userStore';
 
-export const AdminPanel = () => {
+interface AdminPanelProps {
+  setId?: number;
+}
+
+export const AdminPanel: React.FC<AdminPanelProps> = ({ setId }) => {
   const [showFunctionFilter, setShowFunctionFilter] = useState(false);
   const [showCreateProfile, setShowCreateProfile] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
@@ -45,12 +49,13 @@ export const AdminPanel = () => {
     <>
       <Panel 
         title="ADMIN PANEL" 
+        setId={setId}
         showSettings 
         onSettingsClick={handleSettingsClick}
         isSettingsActive={showFunctionFilter}
       >
         <div className="space-y-4">
-          <MarketInfo />
+          <MarketInfo setId={setId} />
           <div className="grid grid-cols-2 gap-4">
             <UserDataSection />
             <div className="flex flex-col gap-2">

@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { ChatMode, ChatSettings as ChatSettingsType } from '../../../../../types/chat';
 import { GroupChatSettings } from './GroupChatSettings';
 import { AIChatSettings } from './AIChatSettings';
 import { useChatColors } from '../../../../../hooks/useChatColors';
 import { useUserStore } from '../../../../../store/userStore';
+import { useClickOutside } from '../../../../../hooks/useClickOutside';
 
 interface ChatSettingsProps {
   mode: ChatMode;
@@ -22,6 +23,9 @@ export const ChatSettings: React.FC<ChatSettingsProps> = ({
   const { resetColors } = useChatColors();
   const { currentUser } = useUserStore();
   const isAdmin = currentUser?.class === 'Admin';
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useClickOutside(modalRef, onClose);
 
   const handleReset = () => {
   const resetSettings = resetColors(mode);
@@ -150,7 +154,7 @@ export const ChatSettings: React.FC<ChatSettingsProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-[#1a1a1a] border border-theme p-4 w-full max-w-md rounded">
+      <div ref={modalRef} className="bg-[#1a1a1a] border border-theme p-4 w-full max-w-md rounded">
         <div className="space-y-4">
           {renderContent()}
         </div>
